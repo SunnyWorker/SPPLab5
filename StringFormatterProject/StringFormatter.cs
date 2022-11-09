@@ -28,11 +28,12 @@ public class StringFormatter : IStringFormatter
             else if (template[i] == '}')
             {
                 bracketCounter--;
-                if (bracketCounter == 0)
+                if(bracketCounter==1) continue;
+                if (bracketCounter == 0 && !helpString.Equals(""))
                 {
                     HandleConcat(ref resultString, ref helpString, target);
+                    continue;
                 }
-                continue;
             }
 
             if (bracketCounter == 1)
@@ -67,81 +68,90 @@ public class StringFormatter : IStringFormatter
         else memberName = helpString;
         string accessorName = ConvertFirstLetter(memberName) + "Accessor";
         
-        if (cache[target.GetType()].ContainsKey(accessorName))
+        if (!cache[target.GetType()].ContainsKey(accessorName)) throw new MemberNotFoundException(ConvertFirstLetter(memberName));
+        object invokedObject = cache[target.GetType()][accessorName].DynamicInvoke(target);
+        
+        if (invokedObject.GetType().IsArray)
         {
-            object invokedObject = cache[target.GetType()][accessorName].DynamicInvoke(target);
-            if (invokedObject.GetType().IsArray)
+            foreach (var index in indexes)
             {
-                foreach (var index in indexes)
-                {
-                    invokedObject = ((object[]) invokedObject)[int.Parse(index)];
-                }
+                if(invokedObject.GetType()==typeof(byte[])) invokedObject = ((byte[])invokedObject)[int.Parse(index)];
+                else if(invokedObject.GetType()==typeof(short[])) invokedObject = ((short[])invokedObject)[int.Parse(index)];
+                else if(invokedObject.GetType()==typeof(int[])) invokedObject = ((int[])invokedObject)[int.Parse(index)];
+                else if(invokedObject.GetType()==typeof(long[])) invokedObject = ((long[])invokedObject)[int.Parse(index)];
+                else if(invokedObject.GetType()==typeof(float[])) invokedObject = ((float[])invokedObject)[int.Parse(index)];
+                else if(invokedObject.GetType()==typeof(double[])) invokedObject = ((double[])invokedObject)[int.Parse(index)];
+                else if(invokedObject.GetType()==typeof(bool[])) invokedObject = ((bool[])invokedObject)[int.Parse(index)];
+                else if(invokedObject.GetType()==typeof(char[])) invokedObject = ((char[])invokedObject)[int.Parse(index)];
+                else invokedObject = ((object[])invokedObject)[int.Parse(index)];
             }
-            else if (invokedObject.GetType().GetInterface(nameof(IDictionary)) != null)
-            {
-                foreach (var index in indexes)
-                {
-                    if (invokedObject.GetType().GetGenericArguments()[0]==typeof(string))
-                    {
-                        string help = index.Replace("\"", "");
-                        invokedObject = ((IDictionary) invokedObject)[help];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(char))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[char.Parse(index.Replace("'", ""))];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(long))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[long.Parse(index)];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(int))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[int.Parse(index)];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(short))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[short.Parse(index)];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(byte))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[byte.Parse(index)];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(bool))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[bool.Parse(index)];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(double))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[double.Parse(index)];
-                    }
-                    else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(float))
-                    {
-                        invokedObject = ((IDictionary) invokedObject)[float.Parse(index)];
-                    }
-                }
-            }
-            else if (invokedObject.GetType().GetInterface(nameof(IEnumerable))!=null)
-            {
-                foreach (var index in indexes)
-                {
-                    int currentIndex = 0;
-                    IEnumerable enumerable = (IEnumerable)invokedObject;
-                    foreach (var innerObject in enumerable)
-                    {
-                        if (currentIndex == int.Parse(index))
-                        {
-                            invokedObject = innerObject;
-                            break;
-                        }
-                        currentIndex++;
-                    }
-                    if(currentIndex>int.Parse(index)) throw new MemberNotFoundException(ConvertFirstLetter(helpString));
-                }
-            }
-            resultString += invokedObject;
         }
-        else throw new MemberNotFoundException(ConvertFirstLetter(helpString));
+        else if (invokedObject.GetType().GetInterface(nameof(IDictionary)) != null)
+        {
+            foreach (var index in indexes)
+            {
+                object indexObject = null;
+                if (invokedObject.GetType().GetGenericArguments()[0]==typeof(string))
+                {
+                    string help = index.Replace("\"", "");
+                    indexObject = help;
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(char))
+                {
+                    indexObject = char.Parse(index.Replace("'", ""));
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(long))
+                {
+                    indexObject = long.Parse(index);
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(int))
+                {
+                    indexObject = int.Parse(index);
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(short))
+                {
+                    indexObject = short.Parse(index);
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(byte))
+                {
+                    indexObject = byte.Parse(index);
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(bool))
+                {
+                    indexObject = bool.Parse(index);
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(double))
+                {
+                    indexObject = double.Parse(index);
+                }
+                else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(float))
+                {
+                    indexObject = float.Parse(index);
+                }
 
+                if (indexObject != null) invokedObject = ((IDictionary)invokedObject)[indexObject];
+            }
+        }
+        else if (invokedObject.GetType().GetInterface(nameof(IEnumerable))!=null)
+        {
+            foreach (var index in indexes)
+            {
+                int currentIndex = 0;
+                IEnumerable enumerable = (IEnumerable)invokedObject;
+                foreach (var innerObject in enumerable)
+                {
+                    if (currentIndex == int.Parse(index))
+                    {
+                        invokedObject = innerObject;
+                        break;
+                    }
+                    currentIndex++;
+                }
+                if(currentIndex>int.Parse(index)) throw new MemberNotFoundException(ConvertFirstLetter(helpString));
+            }
+        }
+        
+        resultString += invokedObject;
         helpString = "";
     }
 
