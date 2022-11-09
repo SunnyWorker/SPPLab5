@@ -8,7 +8,7 @@ namespace StringFormatterProject;
 public class StringFormatter : IStringFormatter
 {
     public static readonly StringFormatter Shared = new StringFormatter();
-    private static ConcurrentDictionary<Type, Dictionary<String,Expression<Func<User,string>>>> cache = new();
+    private static ConcurrentDictionary<Type, Dictionary<String,Delegate>> cache = new();
     public string Format(string template, object target)
     {
         if (!CheckTemplate(template)) throw new DisbalanceBracketsException();
@@ -32,8 +32,7 @@ public class StringFormatter : IStringFormatter
                     string accessorName = ConvertFirstLetter(helpString) + "Accessor";
                     if (cache[target.GetType()].ContainsKey(accessorName))
                     {
-                        resultString += cache[target.GetType()][accessorName].Compile()
-                            .Invoke((User)target);
+                        resultString += cache[target.GetType()][accessorName].DynamicInvoke(target);
                     }
                     else throw new MemberNotFoundException(ConvertFirstLetter(helpString));
 
@@ -91,14 +90,14 @@ public class StringFormatter : IStringFormatter
             MemberExpression memberExpression = Expression.PropertyOrField(typeParam,fieldInfo.Name);
             ConstantExpression fieldParam = Expression.Constant(fieldInfo.GetValue(target).ToString(),fieldInfo.FieldType);
             cache[target.GetType()].Add(ConvertFirstLetter(fieldInfo.Name)+"Accessor",
-                Expression.Lambda<Func<User,string>>(memberExpression, typeParam)); 
+                Expression.Lambda(memberExpression, typeParam).Compile()); 
         }
         foreach (var propertyInfo in objectProperties)
         {
             MemberExpression memberExpression = Expression.PropertyOrField(typeParam,propertyInfo.Name);
             ConstantExpression fieldParam = Expression.Constant(propertyInfo.GetValue(target).ToString(),propertyInfo.PropertyType);
             cache[target.GetType()].Add(ConvertFirstLetter(propertyInfo.Name)+"Accessor",
-                Expression.Lambda<Func<User,string>>(memberExpression, typeParam)); 
+                Expression.Lambda(memberExpression, typeParam).Compile()); 
         }
     }
 }
