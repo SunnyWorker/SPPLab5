@@ -46,7 +46,6 @@ public class StringFormatter : IStringFormatter
             }
             
         }
-
         return resultString;
     }
 
