@@ -19,22 +19,18 @@ public class StringFormatter : IStringFormatter
         string helpString = "";
         for (var i = 0; i < template.Length; i++)
         {
-            if (template[i] == '{')
+            if (template[i] == '{' || template[i] == '}')
             {
-                bracketCounter++;
-                if(bracketCounter==1) continue;
-            }
-
-            else if (template[i] == '}')
-            {
-                bracketCounter--;
+                bracketCounter = (bracketCounter+1)%2;
                 if(bracketCounter==1) continue;
                 if (bracketCounter == 0 && !helpString.Equals(""))
                 {
-                    HandleConcat(ref resultString, ref helpString, target);
+                    if(template[i] == '{') helpString += template[i];
+                    else if(template[i] == '}') HandleConcat(ref resultString, ref helpString, target);
                     continue;
                 }
             }
+
 
             if (bracketCounter == 1)
             {
@@ -58,10 +54,12 @@ public class StringFormatter : IStringFormatter
         {
             memberName = localHelpString.Substring(0, localHelpString.IndexOf('['));
             int start;
+            int end = 0;
             while ((start = localHelpString.IndexOf('[')) != -1)
             {
-                indexes.Add(localHelpString.Substring(start+1, localHelpString.IndexOf(']') - start - 1));
-                localHelpString = localHelpString.Remove(start, localHelpString.IndexOf(']') - start+1);
+                while(end+1!=localHelpString.Length && localHelpString[end+1]!='[') end = localHelpString.IndexOf(']',end+1);
+                indexes.Add(localHelpString.Substring(start+1, end - start - 1));
+                localHelpString = localHelpString.Remove(start, end - start+1);
             }
         }
         else memberName = helpString;
@@ -92,7 +90,7 @@ public class StringFormatter : IStringFormatter
                 object indexObject = null;
                 if (invokedObject.GetType().GetGenericArguments()[0]==typeof(string))
                 {
-                    string help = index.Replace("\"", "");
+                    string help = index.Substring(1, index.Length - 2);
                     indexObject = help;
                 }
                 else if (invokedObject.GetType().GetGenericArguments()[0]==typeof(char))

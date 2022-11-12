@@ -21,6 +21,8 @@ public class Tests
         int[] GoodsCount = new[] {1,9,1000};
         string[] Names = new[] {"Samsung","Tefal","Asus"};
         StringDictionary.Add("качество","супер");
+        StringDictionary.Add("каче{ство","супер-пупер");
+        StringDictionary.Add("к[аче]ств\"\"о","супер-пупер-дупер");
         IntDictionary.Add(0, "плохо");
         IntDictionary.Add(1, "норм");
         IntDictionary.Add(2, "хорошо");
@@ -39,6 +41,21 @@ public class Tests
         Assert.AreEqual("Петя Иванов заказал(а) утюг с качеством супер",
             user.SaySomething("{FirstName} {LastName} заказал(а) {Goods[0]} с качеством {StringDictionary[\"качество\"]}"));
     }
+    
+    [Test]
+    public void StringDictionaryTest2()
+    {
+        Assert.AreEqual("Петя Иванов заказал(а) утюг с качеством супер-пупер",
+            user.SaySomething("Петя Иванов заказал(а) утюг с качеством {StringDictionary[\"каче{{ство\"]}"));
+    }
+    
+    [Test]
+    public void StringDictionaryTest3()
+    {
+        Assert.AreEqual("Петя Иванов заказал(а) утюг с качеством супер-пупер-дупер",
+            user.SaySomething("Петя Иванов заказал(а) утюг с качеством {StringDictionary[\"к[аче]ств\"\"о\"]}"));
+    }
+
     
     [Test]
     public void IntDictionaryTest()
@@ -80,6 +97,8 @@ public class Tests
     {
         Assert.AreEqual("{FirstName} {LastName} заказал(а) утюг с качеством супер",
             user.SaySomething("{{FirstName}} {{LastName}} заказал(а) {Goods[0]} с качеством {StringDictionary[\"качество\"]}"));
+        Assert.AreEqual("{Петя} {LastName} заказал(а) утюг с качеством супер",
+            user.SaySomething("{{{FirstName}}} {{LastName}} заказал(а) {Goods[0]} с качеством {StringDictionary[\"качество\"]}"));
     }
     
     [Test]
